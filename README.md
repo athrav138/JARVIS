@@ -56,20 +56,14 @@ ELEVENLABS_API_KEY=XXX...XXX
 
 ## How to use
 
-1. Run `display.py` to start the web interface
+Run the `display.py` file to start the web interface and the voice assistant.
 
 ```bash
 python display.py
 ```
 
-2. In another terminal, run `jarvis.py` to start the voice assistant
-
-```bash
-python main.py
-```
-
-- Once ready, both the web interface and the terminal will show `Listening...`
-- You can now speak into the microphone
+- Once ready, the web interface will show `Listening...`
+- You can now click on the `Record` button and speak into the microphone
 - Once you stop speaking, it will show `Stopped listening`
 - It will then start processing your request
 - Once the response is ready, it will show `Speaking...`

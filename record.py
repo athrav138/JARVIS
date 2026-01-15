@@ -79,7 +79,7 @@ def speech_to_text() -> None:
                     break
                 elif wav_sink:
                     # Write to WAV file
-                    wav_bytes = core.buffer_to_wav(audio_data)
+                    wav_bytes = buffer_to_wav(audio_data)
                     wav_sink.write(wav_bytes)
             # Next audio chunk
             chunk = audio_source.read(960)
@@ -92,4 +92,4 @@ def speech_to_text() -> None:
 
 
 if __name__ == "__main__":
-    SpeechToText()
+    speech_to_text()

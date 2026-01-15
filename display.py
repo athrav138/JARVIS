@@ -1,80 +1,43 @@
-"""Periodically read conv.txt and display it in a Taipy app."""
+"""Display the conversation in a Taipy app."""
 
-import time
 from threading import Thread
-from taipy.gui import Gui, State, invoke_callback, get_state_id
+import time
+from taipy.gui import Gui, State
+import elevenlabs
+from pygame import mixer
+import os
+
+from main import process_audio
+from record import speech_to_text
 
 conversation = {"Conversation": []}
-state_id_list = []
 selected_row = [1]
 status = "Idle"
+context = "You are Jarvis, Alex's human assistant. You are witty and full of personality. Your answers should be limited to 1-2 short sentences."
+RECORDING_PATH = "audio/recording.wav"
+audio_path = None
+processing = False
+gui_instance = None
 
+# Initialize mixer for audio playback
+mixer.init()
 
-def on_init(state: State) -> None:
-    """
-    On app initialization, get the state (user) ID
-    so that we know which app to update.
-    """
-    state_id = get_state_id(state)
-    state_id_list.append(state_id)
-
-
-def client_handler(gui: Gui, state_id_list: list) -> None:
-    """
-    Runs in a separate thread and periodically calls to read conv.txt.
-
-    Args:
-        - gui: The GUI object.
-        - state_id_list: The list of state IDs.
-    """
-    while True:
-        time.sleep(0.5)
-        if len(state_id_list) > 0:
-            invoke_callback(gui, state_id_list[0], update_conv, [])
-
-
-def update_conv(state: State) -> None:
-    """
-    Read conv.txt and update the conversation table.
-
-    Args:
-        - state: The current state of the app.
-    """
-    with open("status.txt", "r") as f:
-        status = f.read()
-    state.status = status
-    with open("conv.txt", "r") as f:
-        conv = f.read()
-    conversation["Conversation"] = conv.split("\n")
-    if conversation == state.conversation:
-        return
-    # If the conversation has changed, update it and move to the last row
-    state.conversation = conversation
-    state.selected_row = [len(state.conversation["Conversation"]) - 1]
+# Initialize ElevenLabs
+elevenlabs.set_api_key(os.getenv("ELEVENLABS_API_KEY"))
 
 
 def erase_conv(state: State) -> None:
     """
-    Erase conv.txt and update the conversation table.
-
-    Args:
-        - state: The current state of the app.
+    Erase the conversation and update the conversation table.
     """
-    with open("conv.txt", "w") as f:
-        f.write("")
+    state.conversation = {"Conversation": []}
+    global context
+    context = "You are Jarvis, Alex's human assistant. You are witty and full of personality. Your answers should be limited to 1-2 short sentences."
 
 
 def style_conv(state: State, idx: int, row: int) -> str:
     """
     Apply a style to the conversation table depending on the message's author.
-
-    Args:
-        - state: The current state of the app.
-        - idx: The index of the message in the table.
-        - row: The row of the message in the table.
-
-    Returns:
-        The style to apply to the message.
     """
     if idx is None:
         return None
@@ -90,25 +53,48 @@ page = """
 # Taipy **Jarvis**{: .color-primary} # {: .logo-text}
 <|New Conversation|button|class_name=fullwidth plain|id=reset_app_button|on_action=erase_conv|>
 <br/>
+<|Record|button|class_name=fullwidth plain|on_action=record_and_process|>
+<br/>
 <|{status}|text|>
 |>
 
 <|part|render=True|class_name=p2 align-item-bottom table|
-<|{conversation}|table|style=style_conv|show_all|width=100%|rebuild|selected={selected_row}|>
+<|{conversation}|table|row_class_name=style_conv|show_all|width=100%|rebuild|selected={selected_row}|>
 |>
 |>
 """
 
+def record_and_process(state: State) -> None:
+    """
+    Record audio, process it and update the conversation.
+    """
+    global status
+    status = "Listening..."
+    
+    def record_and_process_thread():
+        try:
+            print("Starting recording...")
+            speech_to_text()
+            print("Recording complete, processing audio...")
+            global context
+            string_words, response, context, audio_file_path = process_audio(RECORDING_PATH, context)
+            print(f"User said: {string_words}")
+            print(f"Jarvis says: {response}")
+            
+            # Update conversation
+            conv = state.conversation
+            conv["Conversation"] += [string_words, response]
+            state.conversation = conv
+            state.audio_path = audio_file_path
+            state.status = "Idle"
+        except Exception as e:
+            print(f"Error in record_and_process: {e}")
+            import traceback
+            traceback.print_exc()
+            state.status = f"Error: {str(e)}"
+
+    state.status = "Listening..."
+    Thread(target=record_and_process_thread, daemon=True).start()
+
 gui = Gui(page)
-
-# Periodically read conv.txt on a separate thread
-t = Thread(
-    target=client_handler,
-    args=(
-        gui,
-        state_id_list,
-    ),
-)
-t.start()
-
 gui.run(debug=True, dark_mode=True)
