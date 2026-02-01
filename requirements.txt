@@ -12,3 +12,5 @@ pandas==2.2.0
 taipy==4.1.0
 geopy==2.4.0
 rhasspy-silence==0.4.0
+pyautogui==0.9.53
+pyttsx3==2.90

@@ -1,0 +1,11 @@
+{
+  "programs": [
+    "notepad.exe",
+    "calc.exe",
+    "mspaint.exe",
+    "explorer.exe",
+    "C:\\Windows\\System32\\notepad.exe"
+  ],
+  "allow_delete": false,
+  "dangerous_keywords": ["format", "shutdown", "restart", "rm -rf", "del "]
+}

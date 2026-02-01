@@ -7,7 +7,7 @@ import elevenlabs
 from pygame import mixer
 import os
 
-from main import process_audio
+from main import process_audio, play_audio
 from record import speech_to_text
 
 conversation = {"Conversation": []}
@@ -86,6 +86,10 @@ def record_and_process(state: State) -> None:
             conv["Conversation"] += [string_words, response]
             state.conversation = conv
             state.audio_path = audio_file_path
+            # Only play if a pre-generated audio file exists (ElevenLabs)
+            if audio_file_path:
+                play_audio(audio_file_path)
+            # If audio_file_path is None, process_audio already handled local TTS fallback
             state.status = "Idle"
         except Exception as e:
             print(f"Error in record_and_process: {e}")
